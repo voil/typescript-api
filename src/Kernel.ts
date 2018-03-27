@@ -70,7 +70,7 @@ class Kernel {
     Kernel.app = express();
     Debug.showInfo('Application instance created successful.');
   }
-
+  
   /**
    * Setup configuration for application instance.
    * 
@@ -78,32 +78,8 @@ class Kernel {
    * @memberof Kernel
    */
   public static setConfigurationApplication(): void {
-    Kernel.app.use(cors({ 
-      origin : process.env.CORS_ORIGIN,
-      credentials :  true,  
-      methods: 'GET, PUT, POST, DELETE, PATCH, OPTIONS', 
-      allowedHeaders: 'Content-Type,Authorization,X-Requested-With'
-    }));
-    Kernel.app.use((request: express.Request, response: express.Response, next): void => {
-        response.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN);
-        response.header('Access-Control-Allow-Methods', process.env.CORS_METHODS);
-        response.header('Access-Control-Allow-Headers', process.env.CORS_HEADERS);
-        response.setHeader('Access-Control-Allow-Credentials', process.env.CORS_CREDENTIALS);
-
-        Output.setConfiguration(response);
-        next();
-    });
-    Kernel.app.use(bodyParser.urlencoded({ extended: true }));
-    Kernel.app.use(bodyParser.json());
-    Kernel.app.set('trust proxy', 1);
-    Kernel.app.use(session({
-      secret: process.env.SECRET_SESSIONS,
-      resave: false,
-      saveUninitialized: true,
-      cookie: { 
-        maxAge: parseInt(process.env.MAX_AGE_COOKIE)
-      }
-    }))
+    this.initializeCors();
+    this.initializeSession();
     
     if(process.env.MAIL_AUTO_CONNECT) {
       Mailer.connectMailerWhitApplication(Kernel.app);
@@ -144,6 +120,52 @@ class Kernel {
     Kernel.app.all('*', (request: express.Request, response: express.Response, next) => 
       response.locals.case.handle()
     );
+  }
+
+  /**
+   * Initialize session fro platform.
+   * 
+   * @private
+   * @static
+   * @memberof Kernel
+   */
+  private static initializeSession(): void {
+    Kernel.app.use(bodyParser.urlencoded({ extended: true }));
+    Kernel.app.use(bodyParser.json());
+    Kernel.app.set('trust proxy', 1);
+    Kernel.app.use(session({
+      secret: process.env.SECRET_SESSIONS,
+      resave: false,
+      saveUninitialized: true,
+      cookie: { 
+        maxAge: parseInt(process.env.MAX_AGE_COOKIE)
+      }
+    }))
+  }
+
+  /**
+   * Initialize cors for platform.
+   * 
+   * @private
+   * @static
+   * @memberof Kernel
+   */
+  private static initializeCors(): void {
+    Kernel.app.use(cors({ 
+      origin : process.env.CORS_ORIGIN,
+      credentials :  true,  
+      methods: 'GET, PUT, POST, DELETE, PATCH, OPTIONS', 
+      allowedHeaders: 'Content-Type,Authorization,X-Requested-With'
+    }));
+    Kernel.app.use((request: express.Request, response: express.Response, next): void => {
+        response.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN);
+        response.header('Access-Control-Allow-Methods', process.env.CORS_METHODS);
+        response.header('Access-Control-Allow-Headers', process.env.CORS_HEADERS);
+        response.setHeader('Access-Control-Allow-Credentials', process.env.CORS_CREDENTIALS);
+
+        Output.setConfiguration(response);
+        next();
+    });
   }
 }
 
